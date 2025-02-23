@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量子决策硬币</title>
+    <style>
+        :root {
+            --gold: linear-gradient(45deg, #4E4E4E 0%, #2D2D2D 100%);
+            --silver: linear-gradient(45deg, #A8A8A8 0%, #6B6B6B 100%);
+        }
+
+        body {
+            font-family: 'Helvetica Neue', system-ui;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d3436 100%);
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #ecf0f1;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .coin-wrapper {
+            perspective: 1200px;
+            margin: 3rem 0;
+        }
+
+        .coin {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            transform-style: preserve-3d;
+            position: relative;
+            transition: transform 1.8s cubic-bezier(0.16, 0.89, 0.32, 1.28);
+            cursor: pointer;
+        }
+
+        .coin-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            border: 4px solid rgba(255,255,255,0.1);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.3),
+                       inset 0 8px 16px rgba(255,255,255,0.1);
+        }
+
+        .front {
+            background: var(--gold);
+            color: #f1c40f;
+            transform: rotateY(0deg);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        .back {
+            background: var(--silver);
+            color: #e0e0e0;
+            transform: rotateY(180deg);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.4);
+        }
+
+        #btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 1.2rem 3rem;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 2rem 0;
+            box-shadow: 0 8px 16px rgba(52,152,219,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #btn:disabled {
+            background: #535c68;
+            cursor: not-allowed;
+        }
+
+        .result-text {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            padding: 1.5rem;
+            margin: 1.5rem auto;
+            max-width: 480px;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s ease;
+            background: linear-gradient(45deg, rgba(0,0,0,0.3), rgba(40,40,40,0.4));
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            color: #f8f8f8;
+        }
+
+        .result-text.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .timer {
+            color: #e74c3c;
+            font-size: 1.1rem;
+            margin-top: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        .quote {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin: 2rem 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="coin-wrapper">
+            <div class="coin" id="coin">
+                <div class="coin-face front">正面</div>
+                <div class="coin-face back">反面</div>
+            </div>
+        </div>
+        <p class="quote">当选择成为负担，让硬币替你思考</p>
+        <button onclick="flipCoin()" id="btn">量子抛掷</button>
+        <div class="result-text" id="result"></div>
+        <div class="timer" id="timer"></div>
+    </div>
+
+    <script>
+        const positive = [
+            "命运已为你指明道路，勇敢前行吧！",
+            "星辰大海在等待，此刻正是启程之时！",
+            "机遇之门已开启，大步向前莫迟疑！",
+            "你的潜力超乎想象，行动就是最好证明！",
+            "春风得意马蹄疾，此时不搏待何时！",
+            "天时地利人和俱备，果断出击正当时！",
+            "幸运女神在微笑，成功就在咫尺间！",
+            "这是属于你的时刻，去创造奇迹吧！",
+            "所有准备都已就绪，立即行动！",
+            "乾坤已定，你便是那匹黑马！",
+            "万事俱备只欠东风，此刻东风已至！",
+            "胜利的曙光就在前方，加速前进！",
+            "这是最佳时机，错过不再来！",
+            "宇宙能量已汇聚，立即行动！",
+            "自信人生二百年，会当击水三千里！",
+            "勇者无惧，此刻正是证明之时！",
+            "幸运值已加满，立即出发！",
+            "天降大任于斯人，此刻当仁不让！",
+            "十年磨一剑，今朝试锋芒！",
+            "千载难逢的机遇，切莫错失良机！"
+        ];
+
+        const negative = [
+            "暂且驻足，或许柳暗花明又一村",
+            "三思而行，慢即是快的智慧",
+            "退后一步观全局，别有洞天",
+            "让思绪沉淀，答案自会浮现",
+            "泡杯清茶，让时间酝酿答案",
+            "暂缓脚步，让灵魂跟上步伐",
+            "韬光养晦时，静待风云变",
+            "明哲保身亦是智者之选",
+            "以退为进，方显大智慧",
+            "暂停不是放弃，而是积蓄力量",
+            "换个视角，或许海阔天空",
+            "审时度势，等待最佳时机",
+            "磨刀不误砍柴工，准备更充分些",
+            "急流勇退有时更需要勇气",
+            "让子弹再飞一会儿",
+            "好饭不怕晚，好事不怕慢",
+            "静观其变，伺机而动",
+            "留得青山在，不怕没柴烧",
+            "退一步方能跳得更远",
+            "蓄势待发，后发制人"
+        ];
+
+        let flipCount = 0;
+        let lastFlipTime = localStorage.getItem('lastFlipTime');
+        let isFlipping = false;
+
+        function resetCoinPosition() {
+            const coin = document.getElementById('coin');
+            // 重置硬币位置保证下次动画正常
+            coin.style.transform = 'rotateY(0deg)';
+        }
+
+        function initialize() {
+            const now = Date.now();
+            if (lastFlipTime && (now - lastFlipTime < 600000)) {
+                flipCount = 3;
+                document.getElementById('btn').disabled = true;
+                startCountdown();
+            }
+        }
+
+        function flipCoin() {
+            if (isFlipping || flipCount >= 3) return;
+
+            isFlipping = true;
+            const coin = document.getElementById('coin');
+            const btn = document.getElementById('btn');
+            const resultDiv = document.getElementById('result');
+            const isPositive = Math.random() > 0.5;
+
+            // 强制重置硬币位置
+            coin.style.transition = 'none';
+            coin.style.transform = 'rotateY(0deg)';
+            void coin.offsetWidth; // 触发重绘
+            coin.style.transition = 'transform 1.8s cubic-bezier(0.16, 0.89, 0.32, 1.28)';
+
+            const rotations = 5 + Math.floor(Math.random() * 3);
+            const finalRotation = isPositive ? rotations*360 : rotations*360 + 180;
+            
+            coin.style.transform = `rotateY(${finalRotation}deg)`;
+            btn.disabled = true;
+
+            // 隐藏之前的文案
+            resultDiv.classList.remove('show');
+
+            setTimeout(() => {
+                resultDiv.style.color = isPositive ? '#2ecc71' : '#e67e22';
+                resultDiv.textContent = isPositive 
+                    ? positive[Math.floor(Math.random()*positive.length)]
+                    : negative[Math.floor(Math.random()*negative.length)];
+                resultDiv.classList.add('show');
+
+                flipCount++;
+                if (flipCount === 3) {
+                    lastFlipTime = Date.now();
+                    localStorage.setItem('lastFlipTime', lastFlipTime);
+                    btn.textContent = '决策锁定';
+                    showFinalMessage();
+                } else {
+                    btn.textContent = '再次抛掷';
+                    btn.disabled = false;
+                }
+                isFlipping = false;
+            }, 1800);
+        }
+
+        function showFinalMessage() {
+            const timerDiv = document.getElementById('timer');
+            timerDiv.innerHTML = `❗你需要立刻作出决定了！<span style="color:#f1c40f">10分钟内不准再抛硬币！</span><br>
+                                <span style="font-size:14px">（剩余冷却时间：<span id="countdown">10:00</span>）</span>`;
+            startCountdown();
+        }
+
+        function startCountdown() {
+            let remaining = 600;
+            const timer = setInterval(() => {
+                remaining--;
+                const minutes = Math.floor(remaining/60).toString().padStart(2,'0');
+                const seconds = (remaining%60).toString().padStart(2,'0');
+                document.getElementById('countdown').textContent = `${minutes}:${seconds}`;
+
+                if (remaining <= 0) {
+                    clearInterval(timer);
+                    document.getElementById('timer').textContent = '';
+                    document.getElementById('btn').textContent = '量子抛掷';
+                    document.getElementById('btn').disabled = false;
+                    flipCount = 0;
+                    localStorage.removeItem('lastFlipTime');
+                }
+            }, 1000);
+        }
+
+        // 初始化状态检测
+        initialize();
+    </script>
+</body>
+</html>
